@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>INPUT QRIS NI JON</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg-0:#0a0e1a;
+    --bg-1:#0f1526;
+    --bg-2:#161d35;
+    --line:#2a3358;
+    --cyan:#4de8d8;
+    --violet:#8b7bff;
+    --amber:#ffb454;
+    --rose:#ff6b8a;
+    --text-0:#eef1fb;
+    --text-1:#9aa4c7;
+    --text-2:#5c6690;
+    --mono:'JetBrains Mono','SF Mono',Consolas,monospace;
+    --disp:'Space Grotesk',Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(139,123,255,.12), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(77,232,216,.10), transparent 60%),
+      var(--bg-0);
+    color:var(--text-0);
+    font-family:var(--disp);
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  @font-face{font-family:'Space Grotesk';src:local('Space Grotesk');}
+
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---- header / signature ---- */
+  header{display:flex;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .facet{
+    width:42px;height:42px;flex:none;
+    background:conic-gradient(from 220deg, var(--cyan), var(--violet) 35%, var(--cyan) 70%, var(--violet));
+    clip-path:polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+    filter:drop-shadow(0 0 14px rgba(77,232,216,.45));
+  }
+  h1{font-size:22px;margin:0;letter-spacing:.3px;font-weight:700;}
+  h1 span{color:var(--cyan);}
+  .sub{color:var(--text-1);font-size:13px;margin-top:2px;}
+  .badge{
+    margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-2);
+    border:1px solid var(--line);padding:6px 10px;border-radius:20px;
+  }
+
+  .mode-toggle{display:flex;gap:10px;margin-bottom:18px;}
+  .mode-btn{
+    flex:1;font-family:var(--disp);font-weight:700;font-size:14px;
+    background:var(--bg-1);border:1px solid var(--line);border-radius:12px;
+    color:var(--text-1);padding:14px 16px;cursor:pointer;
+    transition:all .15s ease;letter-spacing:.3px;
+  }
+  .mode-btn:hover{border-color:var(--text-1);color:var(--text-0);}
+  .mode-btn.active[data-mode="masuk"]{
+    background:linear-gradient(135deg, rgba(77,232,216,.18), rgba(77,232,216,.05));
+    border-color:var(--cyan);color:var(--cyan);
+    box-shadow:0 0 0 1px var(--cyan) inset, 0 0 20px rgba(77,232,216,.15);
+  }
+  .mode-btn.active[data-mode="keluar"]{
+    background:linear-gradient(135deg, rgba(255,107,138,.18), rgba(255,107,138,.05));
+    border-color:var(--rose);color:var(--rose);
+    box-shadow:0 0 0 1px var(--rose) inset, 0 0 20px rgba(255,107,138,.15);
+  }
+
+  section{
+    background:linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  section::before{
+    content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+    background:linear-gradient(180deg,var(--cyan),var(--violet));
+  }
+  .stitle{
+    display:flex;align-items:center;gap:8px;
+    font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-1);
+    margin-bottom:14px;font-weight:600;
+  }
+  .stitle b{color:var(--text-0);}
+
+  textarea{
+    width:100%;min-height:150px;resize:vertical;
+    background:var(--bg-0);border:1px solid var(--line);border-radius:10px;
+    color:var(--text-0);font-family:var(--mono);font-size:12.5px;line-height:1.6;
+    padding:14px;outline:none;
+  }
+  textarea::placeholder{color:var(--text-2);}
+  textarea:focus{border-color:var(--cyan);}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+  button{
+    font-family:var(--disp);font-weight:600;font-size:13px;
+    border:none;border-radius:9px;padding:11px 18px;cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  button:active{transform:scale(.97);}
+  .btn-primary{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#07101f;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--text-1);}
+  .btn-ghost:hover{border-color:var(--text-1);color:var(--text-0);}
+  .hint{color:var(--text-2);font-size:11.5px;margin-top:8px;font-family:var(--mono);}
+
+  /* ---- recap stat cards ---- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .stat{
+    background:var(--bg-0);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  }
+  .stat .k{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;}
+  .stat .v{font-size:22px;font-weight:700;margin-top:6px;font-family:var(--mono);}
+  .stat.cyan .v{color:var(--cyan);}
+  .stat.violet .v{color:var(--violet);}
+  .stat.amber .v{color:var(--amber);}
+  .stat.rose .v{color:var(--rose);}
+
+  .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px;}
+  @media(max-width:700px){.breakdown{grid-template-columns:1fr;}}
+  .bd h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-2);margin:0 0 10px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12.5px;}
+  .bar-label{width:120px;flex:none;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-track{flex:1;height:7px;background:var(--bg-0);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));}
+  .bar-val{width:56px;flex:none;text-align:right;font-family:var(--mono);color:var(--text-0);}
+
+  /* ---- table ---- */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:920px;}
+  thead th{
+    text-align:left;padding:10px 12px;background:var(--bg-0);
+    color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:10.5px;
+    border-bottom:1px solid var(--line);position:sticky;top:0;
+  }
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--text-1);white-space:nowrap;}
+  tbody tr:hover{background:rgba(77,232,216,.04);}
+  tbody tr:last-child td{border-bottom:none;}
+  .mono{font-family:var(--mono);}
+  .copy-cell{cursor:pointer;position:relative;transition:color .12s ease, background .12s ease;}
+  .copy-cell:hover{color:var(--cyan);background:rgba(77,232,216,.06);}
+  .copy-cell:hover::after{
+    content:'⧉ klik untuk copy';position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    font-size:9.5px;color:var(--text-2);background:var(--bg-0);padding:2px 6px;border-radius:4px;
+    border:1px solid var(--line);
+  }
+  .num{text-align:right;}
+  td.username{color:var(--text-0);font-weight:600;}
+  td.total{color:var(--cyan);font-weight:600;}
+  .tag{
+    display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;
+    font-family:var(--mono);
+  }
+  .tag.ok{background:rgba(77,232,216,.14);color:var(--cyan);}
+  .tag.proc{background:rgba(255,180,84,.14);color:var(--amber);}
+  .tag.other{background:rgba(139,123,255,.14);color:var(--violet);}
+  .tag.masuk{background:rgba(77,232,216,.14);color:var(--cyan);}
+  .tag.keluar{background:rgba(255,107,138,.14);color:var(--rose);}
+
+  .empty{color:var(--text-2);text-align:center;padding:40px 10px;font-size:13px;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  input[type=text]{
+    background:var(--bg-0);border:1px solid var(--line);border-radius:8px;color:var(--text-0);
+    padding:9px 12px;font-family:var(--disp);font-size:12.5px;outline:none;flex:1;min-width:180px;
+  }
+  input[type=text]:focus{border-color:var(--cyan);}
+  select{
+    background:var(--bg-0);border:1px solid var(--line);border-radius:8px;color:var(--text-0);
+    padding:9px 12px;font-family:var(--disp);font-size:12.5px;outline:none;
+  }
+  .count-pill{font-family:var(--mono);font-size:11px;color:var(--text-2);}
+
+  .saved-list{display:flex;flex-direction:column;gap:8px;}
+  .saved-item{
+    display:flex;align-items:center;gap:12px;background:var(--bg-0);border:1px solid var(--line);
+    border-radius:9px;padding:10px 14px;font-size:12.5px;
+  }
+  .saved-item .name{font-weight:600;color:var(--text-0);flex:1;}
+  .saved-item .meta{color:var(--text-2);font-family:var(--mono);font-size:11px;}
+  .saved-item button{padding:6px 12px;font-size:11.5px;}
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--bg-2);border:1px solid var(--cyan);color:var(--text-0);
+    padding:10px 18px;border-radius:9px;font-size:12.5px;opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;z-index:99;font-family:var(--mono);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="facet"></div>
+    <div>
+      <h1>INPUT <span>QRIS</span> NI JON</h1>
+      <div class="sub">Tempel data mentah dari panel toko, biar rapi & kebaca semua tanpa kepotong</div>
+    </div>
+    <div class="badge" id="clock"></div>
+  </header>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modeMasukBtn" data-mode="masuk">Uang Masuk</button>
+    <button class="mode-btn" id="modeKeluarBtn" data-mode="keluar">Uang Keluar</button>
+  </div>
+
+  <section>
+    <div class="stitle">01 · <b>Tempel Data</b> dari panel</div>
+    <textarea id="raw" placeholder="Copy baris data dari panel toko lo (blok dari header sampai baris terakhir) lalu paste di sini. Cell yang isinya banyak baris (No Referensi, Saldo, Komentar) otomatis dipecah, nggak perlu dirapiin manual."></textarea>
+    <div class="row">
+      <button class="btn-primary" id="parseBtn">Proses Data</button>
+      <button class="btn-ghost" id="clearBtn">Bersihkan</button>
+      <button class="btn-ghost" id="saveBtn">Simpan Batch Ini</button>
+    </div>
+    <div class="hint">Tips: di Excel, blok baris (termasuk kolom yang kepotong di layar) → Ctrl+C → paste langsung di kotak atas. Data kolom H yang kepotong bakal tetap kebawa utuh.</div>
+  </section>
+
+  <section id="recapSection" style="display:none;">
+    <div class="stitle">02 · <b>Rekap</b> ringkas</div>
+    <div class="stats">
+      <div class="stat cyan"><div class="k">Total Transaksi</div><div class="v" id="stTx">0</div></div>
+      <div class="stat violet"><div class="k">Total Nominal</div><div class="v" id="stAmt">Rp 0</div></div>
+      <div class="stat amber"><div class="k">Rata-rata / Trx</div><div class="v" id="stAvg">Rp 0</div></div>
+      <div class="stat rose"><div class="k">Username Unik</div><div class="v" id="stUser">0</div></div>
+    </div>
+    <div class="breakdown">
+      <div class="bd">
+        <h4>Per Status</h4>
+        <div id="bdStatus"></div>
+      </div>
+      <div class="bd">
+        <h4>Per Tanggal (dari kode)</h4>
+        <div id="bdDate"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tableSection" style="display:none;">
+    <div class="stitle">03 · <b>Data</b> yang sudah dirapikan</div>
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Cari username / no referensi / kode...">
+      <select id="statusFilter"><option value="">Semua status</option></select>
+      <span class="count-pill" id="rowCount">0 baris</span>
+      <button class="btn-ghost" id="copyAllBtn">Copy Semua Kode Ref</button>
+      <button class="btn-ghost" id="copyAllUserBtn">Copy Semua Username</button>
+      <button class="btn-ghost" id="copyAllNominalBtn">Copy Semua Nominal</button>
+      <button class="btn-ghost" id="exportBtn">Export CSV</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>Tipe</th><th>No Referensi</th><th>Username</th><th>Bank</th><th>Metode</th>
+            <th class="num">Total</th><th>Saldo (Lama → Baru)</th><th>Status</th>
+            <th>Dibuat</th><th>Diproses</th><th>Kode Ref.</th><th>Transaksi ID</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="savedSection">
+    <div class="stitle">04 · <b>Batch Tersimpan</b></div>
+    <div class="saved-list" id="savedList"><div class="empty">Belum ada batch yang disimpan.</div></div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let rows = [];
+let mode = 'masuk';
+
+$('#modeMasukBtn').addEventListener('click', ()=>{
+  mode = 'masuk';
+  $('#modeMasukBtn').classList.add('active');
+  $('#modeKeluarBtn').classList.remove('active');
+});
+$('#modeKeluarBtn').addEventListener('click', ()=>{
+  mode = 'keluar';
+  $('#modeKeluarBtn').classList.add('active');
+  $('#modeMasukBtn').classList.remove('active');
+});
+
+function clock(){
+  const d = new Date();
+  $('#clock').textContent = d.toLocaleString('id-ID', {weekday:'short', day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+clock(); setInterval(clock, 30000);
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function rupiah(n){
+  const sign = n < 0 ? '-' : '';
+  return sign + 'Rp ' + Math.round(Math.abs(n)).toLocaleString('id-ID');
+}
+
+function parseRupiah(s){
+  if(!s) return 0;
+  const m = String(s).replace(/[^\d]/g,'');
+  return m ? parseInt(m,10) : 0;
+}
+
+function parseCode(code){
+  // e.g. Ref. No: DP_270198sga311_360_200000_140826_1
+  const simple = /DP_(\d+)[a-zA-Z]+\d+_\d+_(\d+)_(\d{6})_(\d+)/.exec(code || '');
+  if(simple){
+    return { trxId: simple[1], amount: parseInt(simple[2],10), date: simple[3], seq: simple[4] };
+  }
+  return {trxId:'', amount:0, date:'', seq:''};
+}
+
+function fmtDateCode(d){
+  if(!d || d.length !== 6) return d || '-';
+  const dd = d.slice(0,2), mm = d.slice(2,4), yy = d.slice(4,6);
+  const months = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return `${dd} ${months[parseInt(mm,10)]||mm} ${yy}`;
+}
+
+function cleanCell(s){
+  return (s||'').replace(/^\uFEFF/,'').replace(/\r/g,'').trim();
+}
+
+function statusClass(s){
+  const low = s.toLowerCase();
+  if(low.includes('sukses') || low.includes('success') || low.includes('berhasil') || low.includes('disetujui') || low.includes('approved')) return 'ok';
+  if(low.includes('proses') || low.includes('pending') || low.includes('menunggu')) return 'proc';
+  return 'other';
+}
+
+// "717906929915\nC: 14/08/2026 6:12:52\nP: 14/08/2026 6:12:52"
+function parseReferensiField(raw){
+  const lines = cleanCell(raw).split('\n').map(s=>s.trim()).filter(Boolean);
+  let noref = '', created = '', processed = '';
+  lines.forEach(l=>{
+    const mC = /^C:\s*(.+)/i.exec(l);
+    const mP = /^P:\s*(.+)/i.exec(l);
+    if(mC) created = mC[1].trim();
+    else if(mP) processed = mP[1].trim();
+    else if(!noref) noref = l;
+  });
+  return {noref, created, processed};
+}
+
+// "Old: Rp 0\n\nBaru: Rp 200.000"  OR just "Old: Rp 0"
+function parseSaldoField(raw){
+  const clean = cleanCell(raw);
+  const mOld = /Old:\s*Rp\s*([\d.,]+)/i.exec(clean);
+  const mBaru = /Baru:\s*Rp\s*([\d.,]+)/i.exec(clean);
+  return {
+    old: mOld ? parseRupiah(mOld[1]) : null,
+    baru: mBaru ? parseRupiah(mBaru[1]) : null
+  };
+}
+
+// Handles multiple formats:
+// "Ref. No: DP_270198...\nTransaksi Id: 019ffd65-..."
+// "Ref. No: WD_21571...\nTransaction Id: 019ffdc2-..."
+// "Order Id: WD-184602sga311-360-947777499771-3\nTransfer Ref: b2c-20260814224259973612-01m00f1ptr7xrg4ha3j9g21957"
+// plain "WD_226059sga311_360_683602994386_13" (no label at all)
+function parseKomentarField(raw){
+  const clean = cleanCell(raw);
+  const mRef = /(?:Ref\.?\s*No|Order\s*Id):?\s*([^\n\r]+)/i.exec(clean);
+  const mTrx = /(?:Trans(?:aksi|action)\s*Id|Transfer\s*Ref):?\s*(\S+)/i.exec(clean);
+  const code = mRef ? mRef[1].trim() : clean.split('\n')[0].trim();
+  return { code, transaksiId: mTrx ? mTrx[1].trim() : '', ...parseCode(code) };
+}
+
+// "BCA\nahmad yani\n8010318263"
+function parseBankField(raw){
+  const lines = cleanCell(raw).split('\n').map(s=>s.trim()).filter(Boolean);
+  return lines.join(' • ');
+}
+
+// col6 = "Hoki" (catatan), col7 = "Raihan1\nStatus: Disetujui" (diproses oleh + status)
+function parseKeluarExtra(col6, col7){
+  const catatan = cleanCell(col6);
+  const lines7 = cleanCell(col7).split('\n').map(s=>s.trim()).filter(Boolean);
+  let diprosesOleh = '', status = '';
+  lines7.forEach(l=>{
+    const mS = /^Status:\s*(.+)/i.exec(l);
+    if(mS) status = mS[1].trim();
+    else if(!diprosesOleh) diprosesOleh = l;
+  });
+  return {catatan, diprosesOleh, status};
+}
+
+// "QRIS CEPAT PROSES KILAT II\nAUTO PROSES 1 DETIK"
+function parseMetodeField(raw){
+  const lines = cleanCell(raw).split('\n').map(s=>s.trim()).filter(Boolean);
+  return lines.join(' — ');
+}
+
+function looksLikeHeader(cols){
+  const joined = cols.join(' ').toLowerCase();
+  return joined.includes('no referensi') && joined.includes('username');
+}
+
+function parseRaw(text, mode){
+  const parsed = Papa.parse(text.trim(), { delimiter: '\t', skipEmptyLines: false });
+  const table = parsed.data.filter(r => r.some(c => (c||'').trim().length));
+  const out = [];
+
+  for(const cols of table){
+    if(cols.length < 5) continue;
+    if(looksLikeHeader(cols)) continue;
+
+    const no = cleanCell(cols[0]);
+    if(!/^\d+$/.test(no)) continue; // skip junk / continuation rows
+
+    const refInfo = parseReferensiField(cols[1]);
+    const username = cleanCell(cols[2]);
+
+    let bank, metode, total, saldoInfo, status, komInfo;
+
+    if(mode === 'keluar'){
+      // No, Referensi, Username, Bank Tujuan, Total, Saldo, Catatan, Diproses Oleh+Status, Komentar
+      bank = parseBankField(cols[3]) || '---';
+      total = -Math.abs(parseRupiah(cols[4]));
+      saldoInfo = parseSaldoField(cols[5]);
+      const extra = parseKeluarExtra(cols[6], cols[7]);
+      metode = `Catatan: ${extra.catatan || '-'} • Diproses: ${extra.diprosesOleh || '-'}`;
+      status = extra.status || '-';
+      komInfo = parseKomentarField(cols[8]);
+    } else {
+      // No, Referensi, Username, Bank, Metode, Total, Saldo, Status, Komentar
+      bank = cleanCell(cols[3]) || '---';
+      metode = parseMetodeField(cols[4]);
+      total = parseRupiah(cols[5]);
+      saldoInfo = parseSaldoField(cols[6]);
+      status = cleanCell(cols[7]).replace(/^Status:\s*/i,'') || '-';
+      komInfo = parseKomentarField(cols[8]);
+    }
+
+    out.push({
+      no,
+      type: mode,
+      noref: refInfo.noref,
+      created: refInfo.created,
+      processed: refInfo.processed,
+      username,
+      bank,
+      metode,
+      total,
+      saldoOld: saldoInfo.old,
+      saldoBaru: saldoInfo.baru,
+      status,
+      code: komInfo.code,
+      transaksiId: komInfo.transaksiId,
+      trxId: komInfo.trxId,
+      dateRaw: komInfo.date,
+      seq: komInfo.seq
+    });
+  }
+  return out;
+}
+
+function render(){
+  if(!rows.length){
+    $('#recapSection').style.display='none';
+    $('#tableSection').style.display='none';
+    return;
+  }
+  $('#recapSection').style.display='block';
+  $('#tableSection').style.display='block';
+
+  const totalTx = rows.length;
+  const totalAmt = rows.reduce((a,r)=>a+r.total,0);
+  const avg = totalAmt/totalTx;
+  const uniqUsers = new Set(rows.map(r=>r.username)).size;
+
+  $('#stTx').textContent = totalTx.toLocaleString('id-ID');
+  $('#stAmt').textContent = rupiah(totalAmt);
+  $('#stAvg').textContent = rupiah(avg);
+  $('#stUser').textContent = uniqUsers.toLocaleString('id-ID');
+
+  // breakdown per status
+  const byStatus = {};
+  rows.forEach(r=>{ byStatus[r.status] = (byStatus[r.status]||0)+1; });
+  const bdStatus = $('#bdStatus'); bdStatus.innerHTML='';
+  const maxStatus = Math.max(...Object.values(byStatus));
+  Object.entries(byStatus).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    bdStatus.innerHTML += `<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/maxStatus*100)}%"></div></div><div class="bar-val">${v}</div></div>`;
+  });
+
+  // breakdown per date
+  const byDate = {};
+  rows.forEach(r=>{ const d = fmtDateCode(r.dateRaw); byDate[d] = (byDate[d]||0)+1; });
+  const bdDate = $('#bdDate'); bdDate.innerHTML='';
+  const maxDate = Math.max(...Object.values(byDate));
+  Object.entries(byDate).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    bdDate.innerHTML += `<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/maxDate*100)}%"></div></div><div class="bar-val">${v}</div></div>`;
+  });
+
+  // status filter options
+  const sel = $('#statusFilter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Semua status</option>' +
+    Object.keys(byStatus).map(s=>`<option value="${s}">${s}</option>`).join('');
+  sel.value = current;
+
+  renderTable();
+}
+
+function renderTable(){
+  const q = $('#search').value.trim().toLowerCase();
+  const statusF = $('#statusFilter').value;
+  const filtered = rows.filter(r=>{
+    if(statusF && r.status !== statusF) return false;
+    if(!q) return true;
+    return (r.username.toLowerCase().includes(q) ||
+            r.noref.toLowerCase().includes(q) ||
+            r.code.toLowerCase().includes(q));
+  });
+  $('#rowCount').textContent = filtered.length + ' baris';
+  const tbody = $('#tbody');
+  if(!filtered.length){
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">Tidak ada data yang cocok.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(r=>`
+    <tr>
+      <td class="mono">${r.no}</td>
+      <td><span class="tag ${r.type}">${r.type === 'masuk' ? 'Masuk' : 'Keluar'}</span></td>
+      <td class="mono">${r.noref||'-'}</td>
+      <td class="username copy-cell" data-copy="${r.username}" title="Klik buat copy username: ${r.username}">${r.username}</td>
+      <td>${r.bank}</td>
+      <td title="${r.metode}">${r.metode ? (r.metode.length>22 ? r.metode.slice(0,22)+'…' : r.metode) : '-'}</td>
+      <td class="total num copy-cell" data-copy="${r.total}" title="Klik buat copy nominal: ${r.total}">${rupiah(r.total)}</td>
+      <td class="mono">${r.saldoOld!==null ? rupiah(r.saldoOld):'-'} → ${r.saldoBaru!==null ? rupiah(r.saldoBaru):'-'}</td>
+      <td><span class="tag ${statusClass(r.status)}">${r.status}</span></td>
+      <td class="mono">${r.created||'-'}</td>
+      <td class="mono">${r.processed||'-'}</td>
+      <td class="mono copy-cell" data-copy="${r.code.replace(/"/g,'&quot;')}" title="Klik buat copy: ${r.code}">${r.code ? r.code.slice(0,26)+(r.code.length>26?'…':'') : '-'}</td>
+      <td class="mono copy-cell" data-copy="${r.transaksiId}" title="Klik buat copy Transaksi ID: ${r.transaksiId}">${r.transaksiId ? r.transaksiId.slice(0,8)+'…' : '-'}</td>
+    </tr>
+  `).join('');
+}
+
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch(e){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return true;
+    }catch(e2){ return false; }
+  }
+}
+
+$('#tbody').addEventListener('click', async (e)=>{
+  const cell = e.target.closest('.copy-cell');
+  if(!cell) return;
+  const text = cell.getAttribute('data-copy');
+  if(!text) return;
+  const ok = await copyText(text);
+  toast(ok ? 'Disalin: ' + text.slice(0,30) + (text.length>30?'…':'') : 'Gagal menyalin');
+});
+
+$('#copyAllBtn').addEventListener('click', async ()=>{
+  if(!rows.length){ toast('Belum ada data'); return; }
+  const q = $('#search').value.trim().toLowerCase();
+  const statusF = $('#statusFilter').value;
+  const filtered = rows.filter(r=>{
+    if(statusF && r.status !== statusF) return false;
+    if(!q) return true;
+    return (r.username.toLowerCase().includes(q) || r.noref.toLowerCase().includes(q) || r.code.toLowerCase().includes(q));
+  });
+  const text = filtered.map(r=>r.code).filter(Boolean).join('\n');
+  const ok = await copyText(text);
+  toast(ok ? `${filtered.length} kode ref disalin` : 'Gagal menyalin');
+});
+
+function getFilteredRows(){
+  const q = $('#search').value.trim().toLowerCase();
+  const statusF = $('#statusFilter').value;
+  return rows.filter(r=>{
+    if(statusF && r.status !== statusF) return false;
+    if(!q) return true;
+    return (r.username.toLowerCase().includes(q) || r.noref.toLowerCase().includes(q) || r.code.toLowerCase().includes(q));
+  });
+}
+
+$('#copyAllUserBtn').addEventListener('click', async ()=>{
+  if(!rows.length){ toast('Belum ada data'); return; }
+  const filtered = getFilteredRows();
+  const text = filtered.map(r=>r.username).filter(Boolean).join('\n');
+  const ok = await copyText(text);
+  toast(ok ? `${filtered.length} username disalin` : 'Gagal menyalin');
+});
+
+$('#copyAllNominalBtn').addEventListener('click', async ()=>{
+  if(!rows.length){ toast('Belum ada data'); return; }
+  const filtered = getFilteredRows();
+  const text = filtered.map(r=>r.total).join('\n');
+  const ok = await copyText(text);
+  toast(ok ? `${filtered.length} nominal disalin` : 'Gagal menyalin');
+});
+
+$('#parseBtn').addEventListener('click', ()=>{
+  const text = $('#raw').value;
+  if(!text.trim()){ toast('Tempel data dulu, bro'); return; }
+  const newRows = parseRaw(text, mode);
+  if(!newRows.length){ toast('Gak ada baris data yang kebaca. Cek format paste-nya.'); return; }
+  rows = rows.concat(newRows);
+  render();
+  toast(`${newRows.length} baris (${mode === 'masuk' ? 'Uang Masuk' : 'Uang Keluar'}) ditambahkan`);
+});
+
+$('#clearBtn').addEventListener('click', ()=>{
+  $('#raw').value=''; rows=[]; render();
+});
+
+$('#search').addEventListener('input', renderTable);
+$('#statusFilter').addEventListener('change', renderTable);
+
+$('#exportBtn').addEventListener('click', ()=>{
+  if(!rows.length) return;
+  const header = ['No','Tipe','No Referensi','Username','Bank','Metode','Total','Saldo Lama','Saldo Baru','Status','Dibuat','Diproses','Kode Ref','Transaksi ID'];
+  const csvRows = rows.map(r=>[r.no,(r.type==='masuk'?'Masuk':'Keluar'),r.noref,r.username,r.bank,r.metode,r.total,r.saldoOld??'',r.saldoBaru??'',r.status,r.created,r.processed,r.code,r.transaksiId]
+    .map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [header.join(','), ...csvRows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `rekap-diamond-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV berhasil diunduh');
+});
+
+// ---- persistent storage: save/load batches ----
+async function loadSavedList(){
+  const list = $('#savedList');
+  try{
+    const idx = await window.storage.get('batch-index', false);
+    const ids = idx ? JSON.parse(idx.value) : [];
+    if(!ids.length){ list.innerHTML = '<div class="empty">Belum ada batch yang disimpan.</div>'; return; }
+    const items = await Promise.all(ids.map(async id=>{
+      try{ const r = await window.storage.get('batch:'+id, false); return r ? JSON.parse(r.value) : null; }
+      catch(e){ return null; }
+    }));
+    list.innerHTML = items.filter(Boolean).sort((a,b)=>b.savedAt-a.savedAt).map(b=>`
+      <div class="saved-item">
+        <div class="name">${b.name}</div>
+        <div class="meta">${b.count} trx · ${rupiah(b.total)}</div>
+        <button class="btn-ghost" data-load="${b.id}">Muat</button>
+        <button class="btn-ghost" data-del="${b.id}">Hapus</button>
+      </div>
+    `).join('');
+  }catch(e){
+    list.innerHTML = '<div class="empty">Belum ada batch yang disimpan.</div>';
+  }
+}
+
+$('#saveBtn').addEventListener('click', async ()=>{
+  if(!rows.length){ toast('Proses data dulu sebelum disimpan'); return; }
+  const id = Date.now().toString(36);
+  const name = `Batch ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})} · ${new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
+  const total = rows.reduce((a,r)=>a+r.total,0);
+  const payload = { id, name, savedAt: Date.now(), count: rows.length, total, rows };
+  try{
+    await window.storage.set('batch:'+id, JSON.stringify(payload), false);
+    let idx = [];
+    try{ const cur = await window.storage.get('batch-index', false); idx = cur ? JSON.parse(cur.value) : []; }catch(e){}
+    idx.push(id);
+    await window.storage.set('batch-index', JSON.stringify(idx), false);
+    toast('Batch tersimpan');
+    loadSavedList();
+  }catch(e){
+    toast('Gagal menyimpan, coba lagi');
+  }
+});
+
+$('#savedList').addEventListener('click', async (e)=>{
+  const loadId = e.target.getAttribute('data-load');
+  const delId = e.target.getAttribute('data-del');
+  if(loadId){
+    try{
+      const r = await window.storage.get('batch:'+loadId, false);
+      if(r){ const b = JSON.parse(r.value); rows = b.rows; render(); toast('Batch dimuat: '+b.name); }
+    }catch(err){ toast('Gagal memuat batch'); }
+  }
+  if(delId){
+    try{
+      await window.storage.delete('batch:'+delId, false);
+      let idx = [];
+      try{ const cur = await window.storage.get('batch-index', false); idx = cur ? JSON.parse(cur.value) : []; }catch(e){}
+      idx = idx.filter(x=>x!==delId);
+      await window.storage.set('batch-index', JSON.stringify(idx), false);
+      toast('Batch dihapus');
+      loadSavedList();
+    }catch(err){ toast('Gagal menghapus'); }
+  }
+});
+
+loadSavedList();
+</script>
+</body>
+</html>
